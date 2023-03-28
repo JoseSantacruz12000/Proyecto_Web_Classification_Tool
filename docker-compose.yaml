@@ -1,0 +1,73 @@
+version: "3.10"
+networks:
+  demonet:
+    driver: bridge
+services:
+#  db:
+#    container_name: docker-demo.postgres
+#    image: postgres
+#    ports:
+#      - "5000:5000"
+#    environment:
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=postgres
+#      - POSTGRES_DB=demodb
+#    volumes:
+#      - ./data/db:/var/lib/postgresql/data
+#    restart: always
+#    networks:
+#      - demonet
+  api:
+    build:
+      dockerfile: Dockerfile
+    image: backend/app
+    container_name: api-demo.app
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5000/demodb
+    ports:
+      - "4040:4040"
+    command: bash -c "uvicorn app.api:app --host 0.0.0.0 --port 4040 --reload"
+#    depends_on:
+#      - db
+    networks:
+      - demonet
+#  pgadmin:
+#    container_name: docker-demo.pgadmin
+#    image: dpage/pgadmin4
+#    ports:
+#      - "5050:80"
+#    depends_on:
+#      - db
+#    environment:
+#      - PGADMIN_DEFAULT_EMAIL=pgadmin4@pgadmin.org
+#      - PGADMIN_DEFAULT_PASSWORD=admin
+#    networks:
+#        - demonet
+#    logging:
+#      driver: none
+  mlflow:
+    build:
+      dockerfile: Dockerfile
+    image: backend/mlflow
+    container_name: mlflow-demo.model
+    ports:
+      - "4000:4000"
+    command: bash -c "mlflow server -h 0.0.0.0 -p 4000"
+    depends_on:
+      - api
+    networks:
+      - demonet
+  streamlit:
+    build:
+      dockerfile: Dockerfile
+    image: frontend/streamlit
+    container_name: streamlit-demo.app
+    environment:
+      - API_ENDPOINT= http://api:4040
+    ports:
+      - "8501:8501"
+    command: "streamlit run home.py --server.port=8501 --server.address=0.0.0.0"
+    depends_on:
+      - api
+    networks:
+      - demonet

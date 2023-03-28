@@ -1,0 +1,1 @@
+from .web_classifier import router
